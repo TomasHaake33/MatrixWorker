@@ -38,39 +38,36 @@ void CheckMatrix(const Matrix& matrix)
 /**
  * \brief Транспонирование части матрицы в пределах строк (наивное)
  * 
- * \param matrix
+ * \param destMatrix матрица, куда записывается результат
+ * \param srcMatrix матрица, откуда считывается исходное значение
  * \param beginRow строка, с которой начинается часть
  * \param endRow последняя строка части
  * \return транспонированная часть матрицы
  */
-Matrix MatrixWorker::PartialTranspose(const Matrix& matrix, const int beginRow, const int endRow)
+void MatrixWorker::PartialTranspose(Matrix& destMatrix, const Matrix& srcMatrix, const int beginRow, const int endRow)
 {
-    const auto retWidth = static_cast<unsigned>(endRow - beginRow);
-    std::vector<int> ret(matrix.width * (endRow - beginRow), 0);
-    for (auto i = 0; i < retWidth; ++i)
+    for (auto i = beginRow; i < endRow; ++i)
     {
-        for (auto j = 0; j < matrix.width; ++j)
+        for (auto j = 0; j < srcMatrix.width; ++j)
         {
-            ret[j * retWidth + i] = matrix.data[(i + beginRow) * matrix.width + j];
+            destMatrix.data[j * destMatrix.width + i] = srcMatrix.data[i * srcMatrix.width + j];
         }
     }
-    return Matrix{ ret, retWidth, matrix.width };
 }
 
 /**
- * \brief Асинхронное транспонирование матрицы
+ * \brief Многопоточное транспонирование матрицы
  * 
  * \param matrix
  * \param numThreads число потоков
+ * \return транспонированная матрица
  */
-void MatrixWorker::AsyncTranspose(Matrix& matrix, int numThreads)
+Matrix MatrixWorker::AsyncTranspose(Matrix& matrix, int numThreads)
 {
     CheckMatrix(matrix);
+    
+    Matrix matrixCopy(matrix); //копия матрицы, записывать транспонирование будем сюда, а считывать из оригинала
 
-    auto t1 = std::chrono::high_resolution_clock::now();
-    //Матрицу делим на части по строкам. Futures содержит их транспонированные варианты
-    //Эти результаты потребуется конкатенировать по горизонтали
-    std::vector<std::future<Matrix>> futures;
     auto rowStep = matrix.height / numThreads; //шаг в строках
     if (rowStep == 0)
     {
@@ -79,41 +76,38 @@ void MatrixWorker::AsyncTranspose(Matrix& matrix, int numThreads)
         rowStep = matrix.height;
     }
 
-    //Запускаем асинхронно транспонирование каждой из частей
+    std::swap(matrixCopy.height, matrixCopy.width);
+
+    std::vector<std::thread> threads; //потоки, где транспонируется матрица по частям
     auto beginRow = 0;
+    //numThreads - 1 потоков будут работать над частями одинакового размера, над остатком работает последний поток
     for (auto i = 0; i < numThreads - 1; ++i)
     {
         const auto endRow = beginRow + rowStep;
-        futures.emplace_back(std::async(
+        threads.emplace_back(std::thread(
             &MatrixWorker::PartialTranspose, 
             this,
-            matrix,
+            std::ref(matrixCopy),
+            std::ref(matrix),
             beginRow,
             endRow));
         beginRow += rowStep;
     }
-    futures.emplace_back(std::async(
+    threads.emplace_back(std::thread(
         &MatrixWorker::PartialTranspose,
-        this, matrix, 
+        this,
+        std::ref(matrixCopy),
+        std::ref(matrix), 
         beginRow, 
         matrix.height));
 
-    //Конкатенируем полученные результаты, записывая сразу в matrix
-    std::swap(matrix.height, matrix.width);
-    for (auto f = 0; f < futures.size(); ++f)
+    //ждем завершения работы потоков
+    for (auto& thread : threads)
     {
-        auto part = futures[f].get();
-        const auto matrixRowBegin = f * rowStep; //горизонитальное смещение строк данной part относительно начал строк matrix
-        for (auto i = 0; i < part.data.size(); ++i)
-        {
-            const auto partRow = i / part.width; //номер текущей строки в part
-            const auto rowIdx = i % part.width; //индекс элемента в текущей строке part
-            //заполняем кусок matrix, которому соответствует part
-            matrix.data[matrix.width * partRow + rowIdx + matrixRowBegin] = part.data[part.width * partRow + rowIdx];
-        }
+        thread.join();
     }
-    auto t2 = std::chrono::high_resolution_clock::now();
-    std::cout << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << std::endl;
+
+    return matrixCopy;
 }
 
 /**
@@ -125,8 +119,7 @@ void MatrixWorker::AsyncTranspose(Matrix& matrix, int numThreads)
 std::future<Matrix> MatrixWorker::AsyncProcess(Matrix matrix)
 {
     return std::async(std::launch::deferred, [=]() mutable {
-        AsyncTranspose(matrix);
-        return matrix;
+        return AsyncTranspose(matrix);
     });
 }
 
