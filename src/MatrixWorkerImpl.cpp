@@ -64,10 +64,14 @@ void MatrixWorker::PartialTranspose(Matrix& destMatrix, const Matrix& srcMatrix,
  */
 Matrix MatrixWorker::AsyncTranspose(Matrix& matrix, int numThreads)
 {
-    CheckMatrix(matrix);
-    
-    Matrix matrixCopy(matrix); //копия матрицы, записывать транспонирование будем сюда, а считывать из оригинала
+    if (numThreads == 0)
+    {
+        throw(std::runtime_error("numThreads is zero"));
+    }
 
+    CheckMatrix(matrix);
+    Matrix matrixCopy(matrix); //копия матрицы, записывать транспонирование будем сюда, а считывать из оригинала
+    
     auto rowStep = matrix.height / numThreads; //шаг в строках
     if (rowStep == 0)
     {
