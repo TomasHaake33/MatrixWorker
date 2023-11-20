@@ -7,7 +7,7 @@ namespace
 {
 
 /**
- * \brief Проверка матрицы на корректность
+ * \brief Check matrix for correct contents
  * 
  * \param matrix
  */
@@ -36,13 +36,13 @@ void CheckMatrix(const Matrix& matrix)
 } //namespace
 
 /**
- * \brief Транспонирование части матрицы в пределах строк (наивное)
+ * \brief Transpose a part of matrix bounded by rows (naive)
  * 
- * \param destMatrix матрица, куда записывается результат
- * \param srcMatrix матрица, откуда считывается исходное значение
- * \param beginRow строка, с которой начинается часть
- * \param endRow последняя строка части
- * \return транспонированная часть матрицы
+ * \param destMatrix destination matrix
+ * \param srcMatrix source matrix
+ * \param beginRow row from thich the part starts
+ * \param endRow row at which the part ends
+ * \returntransposed part of the matrix
  */
 void MatrixWorker::PartialTranspose(Matrix& destMatrix, const Matrix& srcMatrix, const int beginRow, const int endRow)
 {
@@ -56,11 +56,11 @@ void MatrixWorker::PartialTranspose(Matrix& destMatrix, const Matrix& srcMatrix,
 }
 
 /**
- * \brief Многопоточное транспонирование матрицы
+ * \brief Parallel matrix transposition
  * 
  * \param matrix
- * \param numThreads число потоков
- * \return транспонированная матрица
+ * \param numThreads number of threads
+ * \return transposed matrix
  */
 Matrix MatrixWorker::AsyncTranspose(Matrix& matrix, int numThreads)
 {
@@ -70,9 +70,9 @@ Matrix MatrixWorker::AsyncTranspose(Matrix& matrix, int numThreads)
     }
 
     CheckMatrix(matrix);
-    Matrix matrixCopy(matrix); //копия матрицы, записывать транспонирование будем сюда, а считывать из оригинала
+    Matrix matrixCopy(matrix); //matrix copy. Write the result in here, read from original
     
-    auto rowStep = matrix.height / numThreads; //шаг в строках
+    auto rowStep = matrix.height / numThreads; //step in rows
     if (rowStep == 0)
     {
         std::cout << "numThreads is too large for the current matrix. Attempting to run in a single thread" << std::endl;
@@ -82,9 +82,9 @@ Matrix MatrixWorker::AsyncTranspose(Matrix& matrix, int numThreads)
 
     std::swap(matrixCopy.height, matrixCopy.width);
 
-    std::vector<std::thread> threads; //потоки, где транспонируется матрица по частям
+    std::vector<std::thread> threads; //threads which transpose matrix parts 
     auto beginRow = 0;
-    //numThreads - 1 потоков будут работать над частями одинакового размера, над остатком работает последний поток
+    //numThreads - 1 threads will work on equal parts, the remainder is for the last thread
     for (auto i = 0; i < numThreads - 1; ++i)
     {
         const auto endRow = beginRow + rowStep;
@@ -105,7 +105,7 @@ Matrix MatrixWorker::AsyncTranspose(Matrix& matrix, int numThreads)
         beginRow, 
         matrix.height));
 
-    //ждем завершения работы потоков
+    //waiting for threads to end
     for (auto& thread : threads)
     {
         thread.join();
@@ -115,10 +115,10 @@ Matrix MatrixWorker::AsyncTranspose(Matrix& matrix, int numThreads)
 }
 
 /**
- * \brief Отложенный запуск AsyncTranspose, ожидающий запроса результата
+ * \brief Delayed AsyncTranspose execution
  * 
  * \param matrix
- * \return future с транспонированной матрицей
+ * \return future with transposed matrix
  */
 std::future<Matrix> MatrixWorker::AsyncProcess(Matrix matrix)
 {
@@ -128,9 +128,9 @@ std::future<Matrix> MatrixWorker::AsyncProcess(Matrix matrix)
 }
 
 /**
- * \brief Создание MatrixWorker
+ * \brief Creation on MatrixWorker
  * 
- * \return shared_ptr на MatrixWorker
+ * \return shared_ptr to MatrixWorker
  */
 std::shared_ptr<WorkerInterface> get_new_worker()
 {

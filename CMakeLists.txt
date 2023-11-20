@@ -13,7 +13,7 @@ add_executable(MatrixWorkerBin
 target_include_directories(MatrixWorkerBin PRIVATE include)
 target_link_libraries(MatrixWorkerBin PRIVATE MatrixWorker)
 
-#чтобы у меня собралось локально
+#for my local build
 #set(BOOST_ROOT "D:/dev/sdk/boost_1_68_0")
 #set(BOOST_INCLUDE_DIRS "${BOOST_ROOT}/include")
 #set(BOOST_LIBRARY_DIRS "${BOOST_ROOT}/lib")

@@ -3,7 +3,7 @@
 
 #include <MatrixWorker/MatrixWorkerLib.h>
 
-constexpr int NUM_THREADS = 2; //число потоков для параллельного транспонирования
+constexpr int NUM_THREADS = 2; //number of threads for transposition. Must be <= matrix.height
 
 class MatrixWorker : public WorkerInterface
 {
