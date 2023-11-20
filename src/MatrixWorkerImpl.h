@@ -12,7 +12,7 @@ public:
     ~MatrixWorker() = default;
 
     Matrix AsyncTranspose(Matrix& matrix, int numThreads = NUM_THREADS);
-    void PartialTranspose(Matrix& destMatrix, const Matrix& srcMatrix, const int beginRow, const int endRow);
+    void PartialTranspose(Matrix& destMatrix, const Matrix& srcMatrix, const unsigned beginRow, const unsigned endRow);
     std::future<Matrix> AsyncProcess(Matrix matrix) override;
 };
 

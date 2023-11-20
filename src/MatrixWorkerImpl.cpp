@@ -44,11 +44,11 @@ void CheckMatrix(const Matrix& matrix)
  * \param endRow row at which the part ends
  * \returntransposed part of the matrix
  */
-void MatrixWorker::PartialTranspose(Matrix& destMatrix, const Matrix& srcMatrix, const int beginRow, const int endRow)
+void MatrixWorker::PartialTranspose(Matrix& destMatrix, const Matrix& srcMatrix, const unsigned beginRow, const unsigned endRow)
 {
-    for (auto i = beginRow; i < endRow; ++i)
+    for (unsigned i = beginRow; i < endRow; ++i)
     {
-        for (auto j = 0; j < srcMatrix.width; ++j)
+        for (unsigned j = 0; j < srcMatrix.width; ++j)
         {
             destMatrix.data[j * destMatrix.width + i] = srcMatrix.data[i * srcMatrix.width + j];
         }
@@ -83,7 +83,7 @@ Matrix MatrixWorker::AsyncTranspose(Matrix& matrix, int numThreads)
     std::swap(matrixCopy.height, matrixCopy.width);
 
     std::vector<std::thread> threads; //threads which transpose matrix parts 
-    auto beginRow = 0;
+    unsigned beginRow = 0;
     //numThreads - 1 threads will work on equal parts, the remainder is for the last thread
     for (auto i = 0; i < numThreads - 1; ++i)
     {
