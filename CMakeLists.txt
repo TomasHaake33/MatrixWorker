@@ -1,5 +1,4 @@
 project(MatrixWorker)
-set_target_properties(MatrixWorker PROPERTIES CXX_STANDARD 14)
 
 add_library(MatrixWorker
     src/MatrixWorkerImpl.cpp
